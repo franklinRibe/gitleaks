@@ -1,3 +1,5 @@
+# IMPORTANTE: TODOS OS SEGREDOS AQUI FORAM GERADOS ALEATÓRIAMENTE PARA TESTE E NÃO SÃO REAIS
+
 # Gitleaks Demo com Maven e Spring Boot
 
 Este repositório existe para demonstrar um erro comum em projetos backend: um desenvolvedor cria uma aplicação funcional, coloca credenciais diretamente no código ou no arquivo de configuração, faz commit disso no repositório e só depois percebe que expôs segredos.
@@ -420,3 +422,113 @@ Se a intenção for usar este repositório como laboratório, o fluxo didático 
 3. rodar o Gitleaks contra o repositório;
 4. refatorar a configuração para `${NOME_DA_VARIAVEL}`;
 5. injetar os valores reais por ambiente, nunca por commit.
+
+## 18. Resultado do uso do Gitleaks
+
+Rodando o comando abaixo:
+
+```bash
+gitleaks detect --source . --report-format json --report-path gitleaks-report.json
+```
+
+Gerou o seguinte resultado:
+
+```bash
+
+    ○
+    │╲
+    │ ○
+    ○ ░
+    ░    gitleaks
+
+8:08PM INF 1 commits scanned.
+8:08PM INF scanned ~25594 bytes (25.59 KB) in 222ms
+8:08PM WRN leaks found: 4
+```
+Isso gera na raiz do projeto um arquivo chamado gitleaks-report.json com todos os segredos encontrados:
+
+```json
+fribeiro@Note-latitude-3400:gitleaks$ cat gitleaks-report.json 
+[
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 4,
+  "EndLine": 4,
+  "StartColumn": 2,
+  "EndColumn": 38,
+  "Match": "amazon.accessKey=AKIA7Q9M2X4L8N5R1T6V",
+  "Secret": "AKIA7Q9M2X4L8N5R1T6V",
+  "File": "src/main/resources/application.properties",
+  "SymlinkFile": "",
+  "Commit": "ce03ef3bf27c7d15f4469a765360361530aa13f4",
+  "Entropy": 4.221928,
+  "Author": "Franklin Ribeiro",
+  "Email": "franklin.ribe@gmail.com",
+  "Date": "2026-04-08T23:08:45Z",
+  "Message": "feat(gitleaks): Commit de teste do gitleks",
+  "Tags": [],
+  "Fingerprint": "ce03ef3bf27c7d15f4469a765360361530aa13f4:src/main/resources/application.properties:generic-api-key:4"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 5,
+  "EndLine": 5,
+  "StartColumn": 2,
+  "EndColumn": 58,
+  "Match": "amazon.secretKey=2mJ8xQ7pLs9Vn4RtYw3Kc6HdZa1UfNe5Bx0GqPrS",
+  "Secret": "2mJ8xQ7pLs9Vn4RtYw3Kc6HdZa1UfNe5Bx0GqPrS",
+  "File": "src/main/resources/application.properties",
+  "SymlinkFile": "",
+  "Commit": "ce03ef3bf27c7d15f4469a765360361530aa13f4",
+  "Entropy": 5.2719283,
+  "Author": "Franklin Ribeiro",
+  "Email": "franklin.ribe@gmail.com",
+  "Date": "2026-04-08T23:08:45Z",
+  "Message": "feat(gitleaks): Commit de teste do gitleks",
+  "Tags": [],
+  "Fingerprint": "ce03ef3bf27c7d15f4469a765360361530aa13f4:src/main/resources/application.properties:generic-api-key:5"
+ },
+ {
+  "RuleID": "generic-api-key",
+  "Description": "Detected a Generic API Key, potentially exposing access to various services and sensitive operations.",
+  "StartLine": 9,
+  "EndLine": 9,
+  "StartColumn": 2,
+  "EndColumn": 51,
+  "Match": "backend.token=glk_api_7fA92kLmQx4Pz8Nw3Ts1Yv6Hd0Rb",
+  "Secret": "glk_api_7fA92kLmQx4Pz8Nw3Ts1Yv6Hd0Rb",
+  "File": "src/main/resources/application.properties",
+  "SymlinkFile": "",
+  "Commit": "ce03ef3bf27c7d15f4469a765360361530aa13f4",
+  "Entropy": 5.058814,
+  "Author": "Franklin Ribeiro",
+  "Email": "franklin.ribe@gmail.com",
+  "Date": "2026-04-08T23:08:45Z",
+  "Message": "feat(gitleaks): Commit de teste do gitleks",
+  "Tags": [],
+  "Fingerprint": "ce03ef3bf27c7d15f4469a765360361530aa13f4:src/main/resources/application.properties:generic-api-key:9"
+ },
+ {
+  "RuleID": "jwt",
+  "Description": "Uncovered a JSON Web Token, which may lead to unauthorized access to web applications and sensitive user data.",
+  "StartLine": 10,
+  "EndLine": 10,
+  "StartColumn": 20,
+  "EndColumn": 180,
+  "Match": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnZXJlbmF0ZWQtdXNlciIsInJvbGUiOiJiYWNrZW5kLWFwaSIsImlhdCI6MTcxMjU3MjgwMH0.c2lnbmF0dXJlLWZha2UtZ2VuZXJhdGVkLXRva2Vu",
+  "Secret": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJnZXJlbmF0ZWQtdXNlciIsInJvbGUiOiJiYWNrZW5kLWFwaSIsImlhdCI6MTcxMjU3MjgwMH0.c2lnbmF0dXJlLWZha2UtZ2VuZXJhdGVkLXRva2Vu",
+  "File": "src/main/resources/application.properties",
+  "SymlinkFile": "",
+  "Commit": "ce03ef3bf27c7d15f4469a765360361530aa13f4",
+  "Entropy": 5.35309,
+  "Author": "Franklin Ribeiro",
+  "Email": "franklin.ribe@gmail.com",
+  "Date": "2026-04-08T23:08:45Z",
+  "Message": "feat(gitleaks): Commit de teste do gitleks",
+  "Tags": [],
+  "Fingerprint": "ce03ef3bf27c7d15f4469a765360361530aa13f4:src/main/resources/application.properties:jwt:10"
+ }
+]
+```
