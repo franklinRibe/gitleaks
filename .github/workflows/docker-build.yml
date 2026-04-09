@@ -35,9 +35,11 @@ jobs:
         uses: zricethezav/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
           GITLEAKS_ENABLE_SUMMARY: true
           GITLEAKS_ENABLE_COMMENTS: false
+          GITLEAKS_ARGS: --log-opts="--all"
 
       - name: Fail pipeline when secrets are found
         if: steps.gitleaks.outcome != 'success'

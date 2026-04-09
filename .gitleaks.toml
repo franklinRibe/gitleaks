@@ -1,0 +1,11 @@
+title = "Gitleaks config for demo repository"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore didactic documentation and generated local report files"
+paths = [
+  '''^README\.md$''',
+  '''^gitleaks-report\.json$'''
+]
