@@ -407,7 +407,103 @@ Depois disso, o time precisa:
 
 Se o segredo era real, nunca se deve assumir que "ninguém viu".
 
-## 17. Resumo
+## 17. Como remover do histórico um arquivo encontrado pelo Gitleaks
+
+Quando o Gitleaks encontra um arquivo com segredo, apagar o conteúdo atual não é suficiente.
+
+Se o arquivo já foi commitado, ele pode continuar acessível no histórico Git. Por isso, quando necessário, o time precisa reescrever o histórico para remover esse arquivo dos commits antigos.
+
+Antes de qualquer limpeza no histórico, a ordem correta é:
+
+1. considerar o segredo comprometido;
+2. rotacionar ou invalidar a credencial exposta;
+3. só depois limpar o histórico.
+
+Isso é importante porque a limpeza do Git não garante que ninguém já tenha visto ou copiado o segredo.
+
+### Exemplo de cenário
+
+Suponha que o Gitleaks encontrou este arquivo:
+
+- `src/main/resources/application.properties`
+
+Se a intenção for remover esse arquivo completamente de todo o histórico do repositório, um caminho moderno e recomendado é usar `git filter-repo`.
+
+### Passo a passo com `git filter-repo`
+
+Primeiro, faça backup ou garanta que você está trabalhando em uma cópia segura do repositório.
+
+Depois, remova o arquivo de todos os commits:
+
+```bash
+git filter-repo --path src/main/resources/application.properties --invert-paths
+```
+
+O que esse comando faz:
+
+- percorre todo o histórico;
+- encontra o arquivo informado;
+- reescreve os commits removendo esse caminho;
+- gera um novo histórico sem esse arquivo.
+
+Se em vez de apagar o arquivo inteiro você quiser apenas limpar segredos específicos, o ideal é usar uma estratégia de replace/redaction. Mas para um laboratório simples, remover o arquivo do histórico costuma ser a explicação mais direta.
+
+### O que fazer depois da reescrita
+
+Depois de reescrever o histórico:
+
+1. revise o resultado localmente;
+2. confirme que o arquivo realmente sumiu dos commits antigos;
+3. rode o Gitleaks novamente;
+4. force o push do histórico reescrito.
+
+Exemplo:
+
+```bash
+git push origin --force --all
+git push origin --force --tags
+```
+
+Esse passo exige cuidado porque altera o histórico compartilhado.
+
+### Impacto para o time
+
+Quando você faz esse tipo de limpeza:
+
+- hashes de commit mudam;
+- branches abertas podem ficar desalinhadas;
+- outras pessoas do time precisam sincronizar novamente o repositório.
+
+Na prática, o time precisa ser avisado para:
+
+- parar novos pushes durante a limpeza;
+- atualizar branches locais;
+- em alguns casos, clonar o repositório de novo.
+
+### Como validar que a limpeza funcionou
+
+Depois da reescrita, rode novamente o scanner:
+
+```bash
+gitleaks detect --source .
+```
+
+Se o arquivo removido era a origem do problema, o finding relacionado ao histórico não deve mais aparecer.
+
+### Quando não vale a pena reescrever o histórico
+
+Nem todo caso pede limpeza de histórico.
+
+Se o segredo já foi rotacionado e o custo operacional para reescrever tudo for alto, algumas equipes preferem:
+
+- apenas remover do estado atual;
+- invalidar a credencial;
+- registrar o incidente;
+- impedir recorrência com scanner e revisão.
+
+Mas em repositórios públicos ou em casos mais sensíveis, remover do histórico costuma ser a decisão correta.
+
+## 18. Resumo
 
 Este projeto demonstra três coisas ao mesmo tempo:
 
@@ -422,6 +518,120 @@ Se a intenção for usar este repositório como laboratório, o fluxo didático 
 3. rodar o Gitleaks contra o repositório;
 4. refatorar a configuração para `${NOME_DA_VARIAVEL}`;
 5. injetar os valores reais por ambiente, nunca por commit.
+
+## 19. Como mandar o Gitleaks ignorar casos específicos
+
+Em projetos reais, às vezes você precisa ignorar casos controlados.
+
+Exemplos comuns:
+
+- documentação que mostra credenciais fictícias;
+- arquivos de exemplo para treinamento;
+- relatórios gerados localmente para estudo;
+- um falso positivo muito específico já analisado pelo time.
+
+O jeito correto de fazer isso no Gitleaks é usar um arquivo de configuração `.gitleaks.toml`.
+
+Neste repositório foi adicionado:
+
+- `.gitleaks.toml`
+
+Ele permite manter as regras padrão do Gitleaks e adicionar exceções controladas.
+
+### Exemplo deste repositório
+
+Aqui a configuração ignora:
+
+- `README.md`, porque o arquivo contém exemplos didáticos e trechos explicativos;
+- `gitleaks-report.json`, porque é um artefato local de demonstração que naturalmente replica findings.
+
+Exemplo:
+
+```toml
+title = "Gitleaks config for demo repository"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ignore didactic documentation and generated local report files"
+paths = [
+  '''^README\.md$''',
+  '''^gitleaks-report\.json$'''
+]
+```
+
+### Tipos de exceção que você pode configurar
+
+O Gitleaks normalmente permite ignorar casos por:
+
+- caminho de arquivo;
+- regex específica;
+- commit específico;
+- fingerprint específica do achado.
+
+### Quando usar `paths`
+
+Use `paths` quando o arquivo inteiro é seguro para ser ignorado.
+
+Exemplo:
+
+- documentação;
+- arquivo de amostra;
+- fixture de teste conhecida;
+- relatório gerado só para estudo.
+
+Esse é o caso mais simples e o mais fácil de manter.
+
+### Quando usar fingerprint específica
+
+Se você não quer ignorar o arquivo inteiro, uma alternativa melhor é ignorar só um achado exato.
+
+Isso é útil quando:
+
+- o arquivo contém conteúdo legítimo e também um falso positivo;
+- você quer manter o scanner funcionando para o restante do arquivo;
+- o Gitleaks já mostrou a fingerprint do finding.
+
+Exemplo conceitual:
+
+```toml
+[[allowlists]]
+description = "Ignore one reviewed false positive"
+fingerprints = [
+  "abc1234567890:README.md:generic-api-key:12"
+]
+```
+
+Nesse modelo, o Gitleaks ignora apenas aquele finding específico, e não o arquivo inteiro.
+
+### Quando evitar ignorar
+
+Você não deve usar allowlist para esconder problema real.
+
+A allowlist deve ser usada somente quando:
+
+- o valor é fictício e controlado;
+- o caso foi revisado;
+- existe uma justificativa clara;
+- o time quer evitar ruído sem perder cobertura útil.
+
+Se o valor for um segredo real, o correto não é ignorar. O correto é:
+
+1. remover o segredo;
+2. rotacionar a credencial;
+3. limpar o histórico, se necessário;
+4. rodar o Gitleaks novamente.
+
+### Como isso funciona no workflow
+
+Como o arquivo `.gitleaks.toml` está na raiz do repositório, a action do Gitleaks no GitHub Actions tende a usar essa configuração automaticamente.
+
+Na prática, isso significa:
+
+- o scanner continua ativo;
+- o build continua bloqueando segredos reais;
+- mas os casos explicitamente allowlisted deixam de gerar ruído.
 
 ## 18. Resultado do uso do Gitleaks
 
